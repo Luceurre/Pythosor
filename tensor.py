@@ -1,6 +1,6 @@
 import numpy as np
 
-def als(c, l, epsilon=1e-8, max_iter = 50):
+def als(c, l, epsilon=1e-8, max_iter = 500):
     """Solve argmin(0.5 x^T * C * x - l * x) where x is a second order tensor,
     C is a second order tensor operator and l is a second order tensor."""
 
@@ -41,7 +41,7 @@ def als(c, l, epsilon=1e-8, max_iter = 50):
 
         norm_evolution = abs(xm.dot(xm) * vm.dot(vm) - xm_old.dot(xm_old) * vm_old.dot(vm_old))
     if iter_count >= max_iter:
-        return None
+        print("ALS diverge!")
 
     return Tensor.from_arrays([xm, vm])
 
@@ -81,7 +81,7 @@ class Tensor:
         return self
 
     def __add__(self, other):
-        assert self.sizes == other.sizes, "Mismatch sizes."
+        # assert self.sizes == other.sizes, "Mismatch sizes."
 
         result_tensor = Tensor(self.sizes)
         for d in range(self.dim_count):
@@ -203,6 +203,38 @@ class Tensor:
                 result_tensor.dim[d-1].append(self.dim[d][k])
         return result_tensor
 
+    def is_vector(self):
+        """Return True if Tensor is a vector, False otherwise."""
+
+        return True
+
+    def is_operator(self):
+        """Return True if Tensor is an operator, False otherwise."""
+
+        return not self.is_vector()
+
+    def compress(self, epsilon=1e-8, max_iter = 50):
+        """Use POD algorithm in combination with ALS to return a compressed version of the tensor."""
+
+        assert self.dim_count == 2 and self.is_vector()
+
+        identity = Tensor.eye(self.sizes)
+        self_copy = 1. * self
+        iter_count = 0
+        norm_evolution = 1.
+        tensor_compressed = Tensor(self.sizes)
+
+        while iter_count < max_iter and norm_evolution > epsilon:
+            residue = als(identity, self_copy)
+            self_copy = self_copy - residue
+            tensor_compressed = tensor_compressed + residue
+
+            norm_evolution = residue.norm()
+            iter_count += 1
+
+            print(norm_evolution)
+
+        return tensor_compressed
     @staticmethod
     def zeros(sizes, rank):
         null_tensor = Tensor(sizes)
@@ -254,3 +286,8 @@ class Tensor:
             arrays_tensor.dim[d].append(arrays[d])
 
         return arrays_tensor
+
+    @staticmethod
+    def eye(sizes):
+        eye_tensor = Tensor.from_arrays([np.eye(size) for size in sizes])
+        return eye_tensor

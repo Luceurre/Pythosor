@@ -113,6 +113,20 @@ class TestTensor(unittest.TestCase):
         self.assertAlmostEqual(result_tensor.norm(), 0., 5,
                                msg="Add and mult should be distributive.")
 
+        # Operator against vector gives vector
+        operator_a = Tensor.from_arrays([np.eye(128), np.eye(256)])
+        tensor_a = Tensor.rand((128, 256), 12)
+
+        res = operator_a * tensor_a
+
+        self.assertTrue(res.get_size(1) == 256, "Should be a vector.")
+
+        tensor_b = Tensor.rand((128, 256), 25)
+        scalar_res = tensor_b * tensor_a
+
+        self.assertIsInstance(scalar_res, float, "Should be a scalar.")
+
+
     def test_norm(self):
         tensor_a = Tensor.from_arrays([np.ones(10), np.zeros(25)])
 
@@ -156,6 +170,19 @@ class TestTensor(unittest.TestCase):
         result = als(operator, vector)
 
         self.assertIsNotNone(result, "Should be a tensor.")
+        result_mat = result.untensorized()
+        self.assertTrue((result_mat >= 0).all(), "Should be positive.")
+
+        # result = 0.5 * (result * operator * result) - vector * result
+        left_result = result * (operator * result)
+        right_result = vector * result
+
+
+        self.assertIsInstance(left_result, float, "Should be a scalar.")
+        self.assertIsInstance(right_result, float, "Should be a scalar.")
+
+        result = left_result - right_result
+        self.assertAlmostEqual(result, -0., msg="Should be almost -0.5.")
     def test_integrate(self):
         tensor_a = Tensor.rand((256, 128), 12)
         tensor_res = tensor_a.integrate(0, lambda vec: sum(vec))
@@ -179,5 +206,13 @@ class TestTensor(unittest.TestCase):
         # TODO: Write integration test. (and not integration test ;))
 
 
+    def test_compress(self):
+        tensor = Tensor.rand((256, 128), 30)
+        tensor_compress = tensor.compress()
+
+        result = tensor - tensor_compress
+        self.assertGreater(tensor.rank, tensor_compress.rank - 2,
+                        "Compress tensor should have a lower rank.")
+        self.assertAlmostEqual(np.linalg.norm(result.untensorized()), 0., 5,msg="Tensor should be equal.")
 if __name__ == '__main__':
     unittest.main()
