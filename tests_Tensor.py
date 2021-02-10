@@ -1,6 +1,8 @@
 import unittest
 from tensor import Tensor
+from tensor import als
 import numpy as np
+
 
 class TestTensor(unittest.TestCase):
     def test_zeros(self):
@@ -146,6 +148,36 @@ class TestTensor(unittest.TestCase):
 
         self.assertAlmostEqual(tensor_a.norm() * scalar, tensor_res.norm(),
                                msg="Should have the same norm.")
+
+    def test_als(self):
+        operator = Tensor.from_arrays([np.eye(128), np.eye(256)])
+        vector = Tensor.from_arrays([np.ones(128), np.ones(256)])
+
+        result = als(operator, vector)
+
+        self.assertIsNotNone(result, "Should be a tensor.")
+    def test_integrate(self):
+        tensor_a = Tensor.rand((256, 128), 12)
+        tensor_res = tensor_a.integrate(0, lambda vec: sum(vec))
+
+        self.assertEqual(tensor_res.dim_count, 1, "Should have dim 1.")
+        vector_res = tensor_res.untensorized()
+        self.assertEqual(np.shape(vector_res), (128,), "Should be a vector.")
+
+        Nx = 128
+        Nv = 256
+
+        def fx(x):
+            return 1.
+
+        def fv(v):
+            return np.cos(v)
+
+        gridx = np.linspace(0., 1., Nx)
+        gridv = np.linspace(0., 2 * np.pi, Nv)
+
+        # TODO: Write integration test. (and not integration test ;))
+
 
 if __name__ == '__main__':
     unittest.main()
