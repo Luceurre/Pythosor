@@ -1,6 +1,7 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
-def als(c, l, epsilon=1e-8, max_iter = 500):
+def als(c, l, epsilon=1e-2, max_iter = 100):
     """Solve argmin(0.5 x^T * C * x - l * x) where x is a second order tensor,
     C is a second order tensor operator and l is a second order tensor."""
 
@@ -30,19 +31,25 @@ def als(c, l, epsilon=1e-8, max_iter = 500):
         left_measure = lambda x: np.dot(x, xm)
         left_operator_2 = l.integrate(0, left_measure).untensorized()
 
-        vm = np.linalg.solve(left_operator, left_operator_2)
+        try:
+            vm = np.linalg.solve(left_operator, left_operator_2)
+        except:
+            vm = np.zeros(Nx)
 
         right_measure = lambda v: np.dot(np.dot(v, vm), vm)
         right_operator = c.integrate(1, right_measure).untensorized()
         right_measure = lambda v: np.dot(v, vm)
         right_operator_2 = l.integrate(1, right_measure).untensorized()
 
-        xm = np.linalg.solve(right_operator, right_operator_2)
+        try:
+            xm = np.linalg.solve(right_operator, right_operator_2)
+        except:
+            xm = np.zeros(Nv)
 
         norm_evolution = abs(xm.dot(xm) * vm.dot(vm) - xm_old.dot(xm_old) * vm_old.dot(vm_old))
     if iter_count >= max_iter:
-        print("ALS diverge!")
-
+        # print("ALS diverge!")
+        pass
     return Tensor.from_arrays([xm, vm])
 
 
@@ -213,7 +220,15 @@ class Tensor:
 
         return not self.is_vector()
 
-    def compress(self, epsilon=1e-8, max_iter = 50):
+    def draw(self):
+        assert self.is_vector() and self.dim_count == 2, "Can't draw higher dimension Tensor."
+
+        self_mat = self.untensorized()
+        plot, ax = plt.subplots()
+
+        ax.imshow(self_mat)
+        plot.show()
+    def compress(self, epsilon=1e-3, max_iter = 50):
         """Use POD algorithm in combination with ALS to return a compressed version of the tensor."""
 
         assert self.dim_count == 2 and self.is_vector()
@@ -231,8 +246,6 @@ class Tensor:
 
             norm_evolution = residue.norm()
             iter_count += 1
-
-            print(norm_evolution)
 
         return tensor_compressed
     @staticmethod

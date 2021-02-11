@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 numpy = "*"
 matplotlib = "*"
+tk = "*"
 
 [dev-packages]
 
@@ -14,3 +15,6 @@ python_version = "3.9"
 
 [scripts]
 tests = "python -m unittest tests_Tensor.py"
+demo = "python ode.py"
+vlasov = "python vlasov.py"
+make_video = "python video.py"
