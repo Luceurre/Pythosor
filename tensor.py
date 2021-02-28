@@ -162,7 +162,11 @@ class Tensor:
         # O(Rank ^ 2 * dimension)
         # Careful! Seems to be precision problem with this method (around 1e-7)
         return abs(self * self) ** 0.5
-                
+
+    def normalize(self):
+
+        self = (1. / self.norm()) * self
+    
     def untensorized(self):
         """Only work with dim 2 and vector value. Return equivalent full size
         matrix."""

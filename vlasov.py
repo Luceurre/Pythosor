@@ -8,7 +8,7 @@ import pickle
 Nx = 128
 Nv = 128
 
-T = 10
+T = 3
 dt = 0.001
 
 beta = 1e-2 #10e-2
@@ -33,6 +33,7 @@ dx = (xmax - xmin) / Nx
 dv = (vmax - vmin) / Nv
 
 f0 = Tensor.from_functions([f0x, f0v], [gridx, gridv])
+f0 = (1. / f0.norm()) * f0
 # f0 = Tensor.rand((Nx, Nv), 1)
 
 # Equation
@@ -67,14 +68,15 @@ n = 0
 
 while n * dt < T:
     current_f = solution[n]
-    operator_1 = Tensor.from_arrays([np.eye(Nx), v.dot(gradv)])
-    operator_2 = Tensor.from_arrays([rho(current_f).dot(gradx), np.eye(Nv)])
+    operator_1 = Tensor.from_arrays([np.eye(Nx), rho(current_f).dot(gradv)])
+    operator_2 = -Tensor.from_arrays([v.dot(gradx), np.eye(Nv)])
 
     full_operator = identity + dt * (operator_1 + operator_2)
 
     next_f = full_operator * current_f
     print(f"Rank at t = {n * dt} before compression: {next_f.rank} with norm: {next_f.norm()}")
     next_f_compressed = next_f.compress()
+    next_f_compressed = (1. / next_f_compressed.norm()) * next_f_compressed
 
     solution.append(next_f_compressed)
     n += 1
